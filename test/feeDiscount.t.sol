@@ -48,8 +48,6 @@ contract FeeDiscountHookTest is Test, Deployers {
             SQRT_PRICE_1_1
         );
 
-        // Add liquidity to the pool so we can swap against it
-        // We approve the modifyLiquidityRouter to spend OUR tokens (address(this))
         MockERC20(Currency.unwrap(currency0)).approve(address(modifyLiquidityRouter), type(uint256).max);
         MockERC20(Currency.unwrap(currency1)).approve(address(modifyLiquidityRouter), type(uint256).max);
 
@@ -196,10 +194,6 @@ contract FeeDiscountHookTest is Test, Deployers {
         BalanceDelta deltaRevoked = _doSwap(userWhitelisted, params);
         uint256 paidRevoked = uint256(-int256(deltaRevoked.amount0()));
 
-        // paidRevoked should be very close to paidBaseline (same fee, same direction).
-        // They won't be exactly equal because one intervening swap shifted the price
-        // slightly; 1e14 tolerance (0.0001 ether) covers that while still being far
-        // tighter than the fee-override difference (~2e14).
         assertApproxEqAbs(paidRevoked, paidBaseline, 1e14);
 
         console2.log("Whitelisted       paid:", paidWhitelisted);
@@ -207,9 +201,6 @@ contract FeeDiscountHookTest is Test, Deployers {
         console2.log("After-revoke      paid:", paidRevoked);
     }
 
-    // -----------------------------------------------------------------------
-    // Edge case: zero swap amount
-    // -----------------------------------------------------------------------
 
     function test_Swap_ZeroAmount_Reverts() public {
         setupUser(userWhitelisted);
