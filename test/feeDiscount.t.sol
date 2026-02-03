@@ -29,24 +29,14 @@ contract FeeDiscountHookTest is Test, Deployers {
         deployMintAndApprove2Currencies();
 
         uint160 flags = uint160(Hooks.BEFORE_SWAP_FLAG);
-        (address hookAddress, bytes32 salt) = HookMiner.find(
-            admin, 
-            flags,
-            type(FeeDiscountHook).creationCode,
-            abi.encode(manager)
-        );
+        (address hookAddress, bytes32 salt) =
+            HookMiner.find(admin, flags, type(FeeDiscountHook).creationCode, abi.encode(manager));
 
         vm.prank(admin);
         hook = new FeeDiscountHook{salt: salt}(manager);
         require(address(hook) == hookAddress, "Hook address mismatch");
 
-        (key, ) = initPool(
-            currency0,
-            currency1,
-            hook,
-            3000, 
-            SQRT_PRICE_1_1
-        );
+        (key,) = initPool(currency0, currency1, hook, 3000, SQRT_PRICE_1_1);
 
         MockERC20(Currency.unwrap(currency0)).approve(address(modifyLiquidityRouter), type(uint256).max);
         MockERC20(Currency.unwrap(currency1)).approve(address(modifyLiquidityRouter), type(uint256).max);
@@ -54,7 +44,7 @@ contract FeeDiscountHookTest is Test, Deployers {
         modifyLiquidityRouter.modifyLiquidity(
             key,
             ModifyLiquidityParams({
-                tickLower: -6000,  // 100 tick spacings wide — keeps slippage negligible for 0.1 ether swaps
+                tickLower: -6000, // 100 tick spacings wide — keeps slippage negligible for 0.1 ether swaps
                 tickUpper: 6000,
                 liquidityDelta: 1000 ether,
                 salt: bytes32(0)
@@ -75,29 +65,24 @@ contract FeeDiscountHookTest is Test, Deployers {
 
     /// @dev Execute a swap as `_user` (sets both msg.sender AND tx.origin)
     function _doSwap(address _user, SwapParams memory params) internal returns (BalanceDelta) {
-        PoolSwapTest.TestSettings memory settings = PoolSwapTest.TestSettings({
-            takeClaims: false,
-            settleUsingBurn: false
-        });
+        PoolSwapTest.TestSettings memory settings =
+            PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false});
         vm.prank(_user, _user);
         return swapRouter.swap(key, params, settings, ZERO_BYTES);
     }
 
     /// @dev zeroForOne exact-output SwapParams
     function _zeroForOneParams(uint256 amount) internal pure returns (SwapParams memory) {
-        return SwapParams({
-            zeroForOne: true,
-            amountSpecified: int256(amount),
-            sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1
-        });
+        return
+            SwapParams({
+                zeroForOne: true, amountSpecified: int256(amount), sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1
+            });
     }
 
     /// @dev oneForZero exact-output SwapParams
     function _oneForZeroParams(uint256 amount) internal pure returns (SwapParams memory) {
         return SwapParams({
-            zeroForOne: false,
-            amountSpecified: int256(amount),
-            sqrtPriceLimitX96: TickMath.MAX_SQRT_PRICE - 1
+            zeroForOne: false, amountSpecified: int256(amount), sqrtPriceLimitX96: TickMath.MAX_SQRT_PRICE - 1
         });
     }
 
@@ -139,7 +124,6 @@ contract FeeDiscountHookTest is Test, Deployers {
         console2.log("Saving (wei)                      :", paidNonWhitelisted - paidWhitelisted);
     }
 
-
     function test_Swap_WhitelistedPaysLess_OneForZero() public {
         SwapParams memory params = _oneForZeroParams(0.1 ether);
 
@@ -163,7 +147,6 @@ contract FeeDiscountHookTest is Test, Deployers {
         console2.log("Opposite-dir whitelisted   input paid (token1):", paidWhitelisted);
         console2.log("Opposite-dir non-whitelisted input paid (token1):", paidNonWhitelisted);
     }
-
 
     function test_Swap_RevokedWhitelistPaysFullFee() public {
         SwapParams memory params = _zeroForOneParams(0.1 ether);
@@ -201,17 +184,13 @@ contract FeeDiscountHookTest is Test, Deployers {
         console2.log("After-revoke      paid:", paidRevoked);
     }
 
-
     function test_Swap_ZeroAmount_Reverts() public {
         setupUser(userWhitelisted);
         vm.prank(admin);
         hook.setWhitelist(userWhitelisted, true);
 
-        SwapParams memory params = SwapParams({
-            zeroForOne: true,
-            amountSpecified: 0,
-            sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1
-        });
+        SwapParams memory params =
+            SwapParams({zeroForOne: true, amountSpecified: 0, sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1});
 
         vm.expectRevert(IPoolManager.SwapAmountCannotBeZero.selector);
         _doSwap(userWhitelisted, params);

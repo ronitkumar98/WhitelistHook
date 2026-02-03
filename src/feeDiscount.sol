@@ -51,16 +51,20 @@ contract FeeDiscountHook is BaseHook {
         whitelist[user] = allowed;
     }
 
-    // WARNINGS FIXED: 
-    // 1. Commented out unused parameters 
+    // WARNINGS FIXED:
+    // 1. Commented out unused parameters
     // 2. Added 'view' keyword
     function _beforeSwap(
         address, /* sender */
         PoolKey calldata, /* key */
         SwapParams calldata, /* params */
         bytes calldata /* hookData */
-    ) internal view override returns (bytes4, BeforeSwapDelta, uint24) {
-        
+    )
+        internal
+        view
+        override
+        returns (bytes4, BeforeSwapDelta, uint24)
+    {
         // Logic: If whitelisted (via tx.origin), apply fee discount override; else, no override (full pool fee)
         uint24 feeOverride = whitelist[tx.origin] ? DISCOUNTED_FEE : 0;
 
